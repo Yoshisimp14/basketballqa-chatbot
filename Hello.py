@@ -5,6 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import time
 import random
 
+# Function to get the most similar response
 def get_most_similar_response(df, query, top_k=1):
     vectorizer = TfidfVectorizer()
     all_data = list(df['Question']) + [query]
@@ -22,7 +23,7 @@ df = pd.read_csv('basketball_qa.csv')
 st.title("Basketball Q&A")
 
 description = """
-This chatbot is your ultimate companion for exploring the exciting world of "Basketball". It is a high-paced team sport played on a rectangular court. Teams aim to score points by shooting a ball through the opponent's hoop. It's known for its dynamic gameplay, iconic players, and global appeal. Basketball promotes fitness, teamwork, and community. Let's embrace ourselves on knowning more about basketball with the help of the chatbot
+This chatbot is your ultimate companion for exploring the exciting world of "Basketball". It is a high-paced team sport played on a rectangular court. Teams aim to score points by shooting a ball through the opponent's hoop. It's known for its dynamic gameplay, iconic players, and global appeal. Basketball promotes fitness, teamwork, and community. Let's embrace ourselves on knowing more about basketball with the help of the chatbot.
 """
 
 st.markdown(description)
@@ -45,10 +46,10 @@ while True:
         chatbot_questions.append(random_question)
         chatbot_responses.append("I'm here to help with any basketball-related questions. Feel free to ask!")
 
-        print(f"Chatbot: {random_question}")
+        st.text(f"Chatbot: {random_question}")
         last_interaction_time = current_time
 
-    query = input("You: ")
+    query = st.text_input("You:")
     last_interaction_time = time.time()  # Update the last interaction time with user input
 
     if query.lower() == 'exit':
@@ -65,15 +66,13 @@ while True:
         # Save the chatbot responses to a CSV file
         chatbot_df.to_csv('chatbot_responses.csv', index=False)
 
-        print("Chatbot: Goodbye!")
+        st.text("Chatbot: Goodbye!")
         break
 
     response_df = get_most_similar_response(df, query)
     if not response_df.empty:
         response = response_df.iloc[0]['Answer']
-        question = response_df.iloc[0]['Question']
-
-        chatbot_questions.append(question)
+        chatbot_questions.append(response_df.iloc[0]['Question'])
         chatbot_responses.append(response)
 
-        print(f"Chatbot: {response}")
+        st.text(f"Chatbot: {response}")
