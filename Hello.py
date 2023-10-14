@@ -39,6 +39,9 @@ last_interaction_time = time.time()
 def is_insufficient(prompt):
     return len(prompt.split()) <= 1
 
+# Create a unique widget ID for the text input
+input_widget_id = st.empty()
+
 while True:
     current_time = time.time()
     # Check if it has been at least 10 seconds since the last user interaction
@@ -53,7 +56,8 @@ while True:
         st.text(f"Chatbot: {random_question}")
         last_interaction_time = current_time
 
-    query = st.text_input("You:")
+    # Get user input using the unique widget ID
+    query = input_widget_id.text_input("You:")
     last_interaction_time = time.time()  # Update the last interaction time with user input
 
     if query.lower() == 'exit':
