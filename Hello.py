@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import time
+import random
 
 # Function to get the most similar response
 def get_most_similar_response(df, query, top_k=1):
