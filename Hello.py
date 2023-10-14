@@ -24,12 +24,13 @@ def is_insufficient(prompt):
 df_basketball = pd.read_csv('basketball_qa.csv')
 
 st.title("Basketball Q&A Chatbot")
+st.markdown("""
+This chatbot is your ultimate companion for exploring the exciting world of "Basketball." It specializes in providing answers to basketball-related questions. Whether you're a die-hard fan or just curious about the sport, feel free to ask questions, and the chatbot will provide you with informative answers.
 
-description = """
-This chatbot is your ultimate companion for exploring the exciting world of "Basketball." Whether you have questions about rules, famous players, or the history of the game, I'm here to help! Please feel free to ask any basketball-related questions, and I'll provide you with the best answers.
-"""
+To interact with the chatbot, simply type your question in the input box below, and the chatbot will respond accordingly. For example, you can ask questions about basketball rules, famous players, or historical events.
 
-st.markdown(description)
+Give it a try, and let's dive into the world of basketball!
+""")
 
 # Initialize chat history
 if "messages" not in st.session_state:
