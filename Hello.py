@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import time
 import random
+import time
 
-# Function to get the most similar response
+# Define a function to get the most similar response
 def get_most_similar_response(df, query, top_k=1):
     vectorizer = TfidfVectorizer()
     all_data = list(df['Question']) + [query]
@@ -14,69 +14,64 @@ def get_most_similar_response(df, query, top_k=1):
     query_vector = tfidf_matrix[-1]
     similarity_scores = cosine_similarity(query_vector, document_vectors)
     sorted_indexes = similarity_scores.argsort()[0][::-1][:top_k]
-    most_similar_responses = df.iloc[sorted_indexes]
+    most_similar_responses = df.iloc[sorted_indexes]['Answer'].values
     return most_similar_responses
 
-# Read the data from the CSV file
-df = pd.read_csv('basketball_qa.csv')
+def is_insufficient(prompt):
+    return len(prompt.split()) <= 1
 
-# Set the title and description for the Streamlit app
+# Sample DataFrame for your basketball QA chatbot
+df_basketball = pd.read_csv('basketball_qa.csv')
+
 st.title("Basketball Q&A Chatbot")
-st.markdown("""
-This chatbot is your ultimate companion for exploring the exciting world of "Basketball." It specializes in providing answers to basketball-related questions. Whether you're a die-hard fan or just curious about the sport, feel free to ask questions, and the chatbot will provide you with informative answers.
 
-To interact with the chatbot, simply type your question in the input box below, and the chatbot will respond accordingly. For example, you can ask questions about basketball rules, famous players, or historical events.
+description = """
+This chatbot is your ultimate companion for exploring the exciting world of "Basketball." Whether you have questions about rules, famous players, or the history of the game, I'm here to help! Please feel free to ask any basketball-related questions, and I'll provide you with the best answers.
+"""
 
-Give it a try, and let's dive into the world of basketball!
-""")
+st.markdown(description)
 
-# Initialize empty lists to store chatbot responses and questions
-chatbot_responses = []
-chatbot_questions = []
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Initialize a variable to track the last user interaction time
-last_interaction_time = time.time()
+# Display chat messages from history on app rerun
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-while True:
-    current_time = time.time()
-    # Check if it has been at least 10 seconds since the last user interaction
-    if current_time - last_interaction_time >= 10:
-        # Randomly select a question from the dataset
-        random_index = random.randint(0, len(df) - 1)
-        random_question = df.iloc[random_index]['Question']
+# React to user input
+if prompt := st.text_input("You:"):
+    # Display user message in chat message container
+    st.chat_message("user").markdown(prompt)
 
-        chatbot_questions.append(random_question)
-        chatbot_responses.append("I'm here to help with any basketball-related questions. Feel free to ask!")
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-        st.text(f"Chatbot: {random_question}")
-        last_interaction_time = current_time
+    if is_insufficient(prompt):
+        insufficient_response = "Insufficient Prompt. Please clarify what you want to know."
+        with st.chat_message("assistant"):
+            st.markdown(insufficient_response)
+        st.session_state.messages.append({"role": "assistant", "content": insufficient_response, "related_query": prompt})
+    else:
+        # Check if the same prompt was already answered previously
+        previous_responses = [m["content"] for m in st.session_state.messages if m["role"] == "assistant" and m["related_query"] == prompt]
 
-    query = st.text_input("User Input: ")  # 
-    last_interaction_time = time.time()  # Update the last interaction time with user input
+        if previous_responses:
+            for response in previous_responses:
+                with st.chat_message("assistant"):
+                    st.markdown(response)
+        else:
+            # Get and display assistant response in chat message container
+            responses_basketball = get_most_similar_response(df_basketball, prompt)
 
-    if query.lower() == 'exit':
-        # If the user types 'exit,' end the conversation
-        chatbot_questions.append("exit")
-        chatbot_responses.append("Chatbot: Goodbye!")
-
-        # Create a DataFrame for chatbot responses and questions
-        chatbot_df = pd.DataFrame({
-            'Question': chatbot_questions,
-            'Answer': chatbot_responses
-        })
-
-        # Save the chatbot responses to a CSV file
-        chatbot_df.to_csv('chatbot_responses.csv', index=False)
-
-        st.text("Chatbot: Goodbye!")
-        break
-
-    response_df = get_most_similar_response(df, query)
-    if not response_df.empty:
-        response = response_df.iloc[0]['Answer']
-        question = response_df.iloc[0]['Question']
-
-        chatbot_questions.append(question)
-        chatbot_responses.append(response)
-
-        st.text(f"Chatbot: {response}")
+            if responses_basketball.any():
+                for response in responses_basketball:
+                    with st.chat_message("assistant"):
+                        st.markdown(f"{response}")
+                    st.session_state.messages.append({"role": "assistant", "content": f"{response}", "related_query": prompt})
+            else:
+                not_understood_response = "I'm sorry, I couldn't find an answer to your question."
+                with st.chat_message("assistant"):
+                    st.markdown(not_understood_response)
+                st.session_state.messages.append({"role": "assistant", "content": not_understood_response, "related_query": prompt})
