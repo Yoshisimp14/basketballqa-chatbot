@@ -20,13 +20,15 @@ def get_most_similar_response(df, query, top_k=1):
 # Read the data from the CSV file
 df = pd.read_csv('basketball_qa.csv')
 
-st.title("Basketball Q&A")
+# Set the title and description for the Streamlit app
+st.title("Basketball Q&A Chatbot")
+st.markdown("""
+This chatbot is your ultimate companion for exploring the exciting world of "Basketball." It specializes in providing answers to basketball-related questions. Whether you're a die-hard fan or just curious about the sport, feel free to ask questions, and the chatbot will provide you with informative answers.
 
-description = """
-This chatbot is your ultimate companion for exploring the exciting world of "Basketball". It is a high-paced team sport played on a rectangular court. Teams aim to score points by shooting a ball through the opponent's hoop. It's known for its dynamic gameplay, iconic players, and global appeal. Basketball promotes fitness, teamwork, and community. Let's embrace ourselves on knowing more about basketball with the help of the chatbot.
-"""
+To interact with the chatbot, simply type your question in the input box below, and the chatbot will respond accordingly. For example, you can ask questions about basketball rules, famous players, or historical events.
 
-st.markdown(description)
+Give it a try, and let's dive into the world of basketball!
+""")
 
 # Initialize empty lists to store chatbot responses and questions
 chatbot_responses = []
@@ -34,13 +36,6 @@ chatbot_questions = []
 
 # Initialize a variable to track the last user interaction time
 last_interaction_time = time.time()
-
-# Define a function to check if the user input is insufficient
-def is_insufficient(prompt):
-    return len(prompt.split()) <= 1
-
-# Create a unique widget ID for the text input
-input_widget_id = st.empty()
 
 while True:
     current_time = time.time()
@@ -56,8 +51,7 @@ while True:
         st.text(f"Chatbot: {random_question}")
         last_interaction_time = current_time
 
-    # Get user input using the unique widget ID
-    query = input_widget_id.text_input("You:")
+    query = st.text_input("You: ")
     last_interaction_time = time.time()  # Update the last interaction time with user input
 
     if query.lower() == 'exit':
@@ -77,35 +71,12 @@ while True:
         st.text("Chatbot: Goodbye!")
         break
 
-    if is_insufficient(query):
-        insufficient_response = "Insufficient Prompt. Please clarify what you want to know."
-        st.text(f"Chatbot: {insufficient_response}")
-        chatbot_questions.append("Insufficient Prompt")
-        chatbot_responses.append(insufficient_response)
-    else:
-        # Check if the same prompt was already answered previously
-        previous_responses = [m["content"] for m in st.session_state.messages if m["role"] == "assistant" and m["content"] == query]
+    response_df = get_most_similar_response(df, query)
+    if not response_df.empty:
+        response = response_df.iloc[0]['Answer']
+        question = response_df.iloc[0]['Question']
 
-        if previous_responses:
-            for response in previous_responses:
-                st.text(f"Chatbot: {response}")
-                chatbot_questions.append("Repeat Prompt")
-                chatbot_responses.append(response)
-        else:
-            # Get and display assistant response in chat message container
-            responses = get_most_similar_response(df, query)
-            for response in responses['Answer']:
-                st.text(f"Chatbot: {response}")
-                chatbot_questions.append(query)
-                chatbot_responses.append(response)
+        chatbot_questions.append(question)
+        chatbot_responses.append(response)
 
-            # Add assistant response to chat history
-            for response in responses['Answer']:
-                st.session_state.messages.append({"role": "assistant", "content": response})
-
-# Display chat messages from history
-st.title("Chat History")
-for message in st.session_state.messages:
-    with st.beta_expander(f"{message['role']}: {message['content']}"):
-        if message.get("related_query"):
-            st.text(f"Related Query: {message['related_query']}")
+        st.text(f"Chatbot: {response}")
