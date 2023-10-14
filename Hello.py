@@ -51,7 +51,7 @@ while True:
         st.text(f"Chatbot: {random_question}")
         last_interaction_time = current_time
 
-    query = st.text_input("You: ")
+    query = st.text_input("User Input: ")  # 
     last_interaction_time = time.time()  # Update the last interaction time with user input
 
     if query.lower() == 'exit':
