@@ -35,6 +35,10 @@ chatbot_questions = []
 # Initialize a variable to track the last user interaction time
 last_interaction_time = time.time()
 
+# Define a function to check if the user input is insufficient
+def is_insufficient(prompt):
+    return len(prompt.split()) <= 1
+
 while True:
     current_time = time.time()
     # Check if it has been at least 10 seconds since the last user interaction
@@ -69,10 +73,35 @@ while True:
         st.text("Chatbot: Goodbye!")
         break
 
-    response_df = get_most_similar_response(df, query)
-    if not response_df.empty:
-        response = response_df.iloc[0]['Answer']
-        chatbot_questions.append(response_df.iloc[0]['Question'])
-        chatbot_responses.append(response)
+    if is_insufficient(query):
+        insufficient_response = "Insufficient Prompt. Please clarify what you want to know."
+        st.text(f"Chatbot: {insufficient_response}")
+        chatbot_questions.append("Insufficient Prompt")
+        chatbot_responses.append(insufficient_response)
+    else:
+        # Check if the same prompt was already answered previously
+        previous_responses = [m["content"] for m in st.session_state.messages if m["role"] == "assistant" and m["content"] == query]
 
-        st.text(f"Chatbot: {response}")
+        if previous_responses:
+            for response in previous_responses:
+                st.text(f"Chatbot: {response}")
+                chatbot_questions.append("Repeat Prompt")
+                chatbot_responses.append(response)
+        else:
+            # Get and display assistant response in chat message container
+            responses = get_most_similar_response(df, query)
+            for response in responses['Answer']:
+                st.text(f"Chatbot: {response}")
+                chatbot_questions.append(query)
+                chatbot_responses.append(response)
+
+            # Add assistant response to chat history
+            for response in responses['Answer']:
+                st.session_state.messages.append({"role": "assistant", "content": response})
+
+# Display chat messages from history
+st.title("Chat History")
+for message in st.session_state.messages:
+    with st.beta_expander(f"{message['role']}: {message['content']}"):
+        if message.get("related_query"):
+            st.text(f"Related Query: {message['related_query']}")
